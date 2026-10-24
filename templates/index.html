@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StudyDesk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-head">
+  <h1 class="brand">StudyDesk</h1>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="t-focus" aria-controls="tab-focus" aria-selected="true">Focus</button>
+    <button role="tab" id="t-plan" aria-controls="tab-plan" aria-selected="false">Timetable</button>
+    <button role="tab" id="t-notes" aria-controls="tab-notes" aria-selected="false">PDF notes</button>
+  </nav>
+  <p class="today">Studied today <b id="todayTotal">0 min</b></p>
+</header>
+
+<main>
+<!-- ===================== FOCUS ===================== -->
+<section id="tab-focus" class="panel" role="tabpanel" aria-labelledby="t-focus">
+  <div class="focus-grid">
+    <div class="card timer-card">
+      <div class="modes" role="group" aria-label="Timer mode">
+        <button data-mode="focus" class="on">Focus</button>
+        <button data-mode="short">Short break</button>
+        <button data-mode="long">Long break</button>
+      </div>
+
+      <div id="timerFlip" class="big-flip" role="timer" aria-live="off" aria-label="Time remaining"></div>
+
+      <input id="taskLabel" class="task" type="text" maxlength="60" placeholder="What are you studying right now?" aria-label="Current task">
+
+      <div class="controls">
+        <button id="btnStart" class="btn primary">Start</button>
+        <button id="btnReset" class="btn">Reset</button>
+        <button id="btnSkip" class="btn">Skip</button>
+      </div>
+
+      <details class="settings">
+        <summary>Timer settings</summary>
+        <div class="set-row">
+          <label>Focus <input type="number" id="setFocus" min="1" max="99" value="25"> min</label>
+          <label>Short break <input type="number" id="setShort" min="1" max="99" value="5"> min</label>
+          <label>Long break <input type="number" id="setLong" min="1" max="99" value="15"> min</label>
+        </div>
+        <label class="check"><input type="checkbox" id="setAuto"> Start the next round automatically</label>
+      </details>
+    </div>
+
+    <aside class="side">
+      <div class="card clock-card">
+        <div class="row-between">
+          <h2>Now</h2>
+          <button id="btnFmt" class="link" aria-label="Switch between 12-hour and 24-hour clock">12h</button>
+        </div>
+        <div id="clock" class="small-flip" role="img" aria-label="Current time"></div>
+        <p class="date" id="dateLine"></p>
+      </div>
+
+      <div class="card cycle-card">
+        <h2>Pomodoro cycle</h2>
+        <div class="dots" id="dots" aria-label="Focus rounds finished in this cycle">
+          <i></i><i></i><i></i><i></i>
+        </div>
+        <p class="hint">Four focus rounds, then a long break.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===================== TIMETABLE ===================== -->
+<section id="tab-plan" class="panel" role="tabpanel" aria-labelledby="t-plan" hidden>
+  <div class="plan-grid">
+    <div class="card plan-setup">
+     <div class="ps-a">
+      <h2>Subjects</h2>
+      <p class="hint">Higher priority means more study sessions each week.</p>
+      <div id="subjectList" class="subjects"></div>
+      <button id="btnAddSubject" class="btn small">Add subject</button>
+     </div>
+     <div class="ps-b">
+      <h2>Your week</h2>
+      <div class="days" id="dayToggles" role="group" aria-label="Study days"></div>
+      <div class="set-grid">
+        <label>Start time <input type="time" id="pStart" value="17:00"></label>
+        <label>Hours per day <input type="number" id="pHours" min="0.5" max="14" step="0.5" value="3"></label>
+        <label>Session (min) <input type="number" id="pSession" min="10" max="180" step="5" value="45"></label>
+        <label>Break (min) <input type="number" id="pBreak" min="0" max="60" step="5" value="10"></label>
+      </div>
+      <button id="btnGenerate" class="btn primary wide">Generate timetable</button>
+      <p id="planMsg" class="msg" role="status"></p>
+     </div>
+    </div>
+
+    <div class="plan-out">
+      <div class="row-between wrap">
+        <div>
+          <h2>Weekly timetable</h2>
+          <p class="hint">Click a block to change it. Tick it when you finish.</p>
+        </div>
+        <div class="actions">
+          <button id="btnClearPlan" class="btn small">Clear</button>
+          <button id="btnPrint" class="btn small">Print</button>
+        </div>
+      </div>
+      <div class="progress" aria-hidden="true"><span id="progBar"></span></div>
+      <p id="progText" class="hint"></p>
+      <div id="week" class="week"></div>
+      <div id="summary" class="summary"></div>
+    </div>
+  </div>
+
+  <dialog id="blockDialog">
+    <form method="dialog" id="blockForm">
+      <h3 id="dlgTitle">Edit block</h3>
+      <label>Subject <select id="dlgSubject"></select></label>
+      <div class="set-grid two">
+        <label>Starts <input type="time" id="dlgStart"></label>
+        <label>Ends <input type="time" id="dlgEnd"></label>
+      </div>
+      <div class="dlg-actions">
+        <button type="button" id="dlgDelete" class="btn danger">Delete</button>
+        <span class="grow"></span>
+        <button type="button" id="dlgCancel" class="btn">Cancel</button>
+        <button type="submit" id="dlgSave" class="btn primary" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+</section>
+
+<!-- ===================== PDF NOTES ===================== -->
+<section id="tab-notes" class="panel" role="tabpanel" aria-labelledby="t-notes" hidden>
+  <div id="drop" class="card drop" tabindex="0">
+    <input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden>
+    <p class="drop-title">Drop a subject PDF here, or <button type="button" id="btnPick" class="link">choose a file</button></p>
+    <p class="hint">The PDF is read on this computer and never saved. Text-based PDFs only (not scanned images).</p>
+  </div>
+  <p id="notesMsg" class="msg" role="status"></p>
+
+  <div id="notesOut" hidden>
+    <div class="card notes-bar">
+      <div class="nb-info">
+        <b id="nbName"></b>
+        <span id="nbStats" class="hint"></span>
+      </div>
+      <label class="slider">Underline the top <b id="strVal">20%</b>
+        <input type="range" id="strength" min="5" max="50" step="5" value="20">
+      </label>
+      <div class="seg" role="group" aria-label="Marking style">
+        <button data-style="underline" class="on">Underline</button>
+        <button data-style="marker">Highlighter</button>
+      </div>
+    </div>
+
+    <div class="notes-grid">
+      <aside class="card topics">
+        <h2>Key topics</h2>
+        <p class="hint">Click one to find it in the text.</p>
+        <div id="chips" class="chips"></div>
+        <div class="row-between mt">
+          <h2>Key points</h2>
+          <button id="btnCopy" class="link">Copy</button>
+        </div>
+        <ol id="points" class="points"></ol>
+      </aside>
+      <article id="reader" class="reader mode-underline" aria-label="Your PDF with important sentences marked"></article>
+    </div>
+  </div>
+</section>
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
