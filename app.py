@@ -1,14 +1,3 @@
-"""
-StudyDesk - a small study website written in Python (Flask).
-
-Features
-  * Flip clock + flip focus timer (Pomodoro style)      -> static/app.js
-  * Customisable weekly study timetable generator       -> /api/timetable
-  * PDF analyser that finds the important sentences     -> /api/analyze
-
-Run:  pip install -r requirements.txt  &&  python app.py
-Then open http://127.0.0.1:5000
-"""
 from __future__ import annotations
 
 import io
@@ -19,7 +8,7 @@ from collections import Counter, defaultdict
 from flask import Flask, jsonify, render_template, request
 from pypdf import PdfReader
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config["MAX_CONTENT_LENGTH"] = 30 * 1024 * 1024  # 30 MB upload limit
 MAX_PAGES = 400
 
